@@ -20,8 +20,8 @@ Before diving into the steps, ensure that you have the following set up:
 Start by cloning the repository that contains all the required code and configuration files.
 
   ```
-  git clone https://github.com/madgicaltechdom/live-stream-kubernetes.git
-  cd live-stream-kubernetes
+  git clone https://github.com/hrmuwanika/livestream-ci-cd-kubernetes.git
+  cd livestream-ci-cd-kubernetes
   ```
 
 This repository includes:
@@ -34,8 +34,8 @@ This repository includes:
 If you want to customize the NGINX RTMP server, you can rebuild the Docker image. Otherwise, you can skip this step and use the pre-built image available in the repository.
 
   ```
-  docker build -t live-stream-kubernetes/nginx-rtmp:latest .
-  docker push live-stream-kubernetes/nginx-rtmp:latest
+  docker build -t hrmuwanika/nginx-rtmp:latest .
+  docker push hrmuwanika/nginx-rtmp:latest
   ```
 
 ## 3. Deploy NGINX RTMP Server on Kubernetes
@@ -55,7 +55,7 @@ Once the NGINX RTMP server is running, use FFmpeg to push a live stream to the s
 
 - Install FFmpeg if you don’t already have it:
   ```
-  sudo apt update && sudo apt install ffmpeg
+  sudo apt update && sudo apt install -y ffmpeg
   ```
   
 - Push a live stream:
@@ -86,6 +86,4 @@ To ensure the RTMP server is working correctly, you can view server statistics:
   
 This page provides details about the live streams currently being broadcast.
 
-## License
 
-This project is licensed under the [MIT License](LICENSE).
