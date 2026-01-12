@@ -1,103 +1,91 @@
-## Supported tags and respective `Dockerfile` links
-
-**Dockerfile**: <https://raw.githubusercontent.com/hrmuwanika/ci-cd-nginx-rtmp-docker-build/main/Dockerfile>
-
-**Note**: Note: There are tags for each build date. If you need to "pin" the Docker image version you use, you can select one of those tags. E.g. `hrmuwanika/nginx-rtmp:2022-10-03`.
-
-# nginx-rtmp
-
-[**Docker**](https://www.docker.com/) image with [**Nginx**](http://nginx.org/en/) using the [**nginx-rtmp-module**](https://github.com/arut/nginx-rtmp-module) module for live multimedia (video) streaming.
-
-## Description
-
-This [**Docker**](https://www.docker.com/) image can be used to create an RTMP server for multimedia / video streaming using [**Nginx**](http://nginx.org/en/) and [**nginx-rtmp-module**](https://github.com/arut/nginx-rtmp-module), built from the current latest sources (Nginx 1.23.1 and nginx-rtmp-module 1.2.2).
-
-This was inspired by other similar previous images from [dvdgiessen](https://hub.docker.com/r/dvdgiessen/nginx-rtmp-docker/), [jasonrivers](https://hub.docker.com/r/jasonrivers/nginx-rtmp/), [aevumdecessus](https://hub.docker.com/r/aevumdecessus/docker-nginx-rtmp/) and by an [OBS Studio post](https://obsproject.com/forum/resources/how-to-set-up-your-own-private-rtmp-server-using-nginx.50/).
-
-The main purpose (and test case) to build it was to allow streaming from [**OBS Studio**](https://obsproject.com/) to different clients at the same time.
-
-**GitHub repo**: <https://github.com/hrmuwanika/ci-cd-nginx-rtmp-docker-build>
-
-**Docker Hub image**: <https://hub.docker.com/r/hrmuwanika/nginx-rtmp/tags>
-
-## Details
-
-## How to use
-
-* For the simplest case, just run a container with this image:
-
-```bash
-docker run -d -p 1935:1935 --name nginx-rtmp hrmuwanika/nginx-rtmp
-```
-
-## How to test with OBS Studio and VLC
-
-* Run a container with the command above
+# Live Stream with Kubernetes
+This repository provides a complete setup for running a live streaming server on Kubernetes using NGINX with RTMP module. With this setup, you can easily stream videos using FFmpeg and serve them over HLS (HTTP Live Streaming). The guide includes Kubernetes deployment files, NGINX configuration, and Docker setup to help you get started quickly. Follow the steps below to deploy your own live-streaming server and start broadcasting in no time! 🚀
 
 
-* Open [OBS Studio](https://obsproject.com/)
-* Click the "Settings" button
-* Go to the "Stream" section
-* In "Stream Type" select "Custom Streaming Server"
-* In the "URL" enter the `rtmp://<ip_of_host>/live` replacing `<ip_of_host>` with the IP of the host in which the container is running. For example: `rtmp://192.168.0.30/live`
-* In the "Stream key" use a "key" that will be used later in the client URL to display that specific stream. For example: `test`
-* Click the "OK" button
-* In the section "Sources" click de "Add" button (`+`) and select a source (for example "Screen Capture") and configure it as you need
-* Click the "Start Streaming" button
+# Pre-requisites
 
+Before diving into the steps, ensure that you have the following set up:
+- Kubernetes Cluster: A running Kubernetes cluster (you can use a local setup like Minikube or a cloud provider like AWS EKS or Google GKE).
+- NGINX with RTMP module: NGINX is required with the RTMP module for handling live stream protocols.
+- FFmpeg: This tool is necessary for encoding and pushing your live video to the NGINX RTMP server.
+- Docker: For containerizing the NGINX RTMP server and FFmpeg if needed.
+- kubectl: Command-line tool to interact with the Kubernetes cluster.
+- Ingress Controller (optional): For exposing services outside the Kubernetes cluster if you want external access.
+- Git: To clone the repository with the setup files.
 
-* Open a [VLC](http://www.videolan.org/vlc/index.html) player (it also works in Raspberry Pi using `omxplayer`)
-* Click in the "Media" menu
-* Click in "Open Network Stream"
-* Enter the URL from above as `rtmp://<ip_of_host>/live/<key>` replacing `<ip_of_host>` with the IP of the host in which the container is running and `<key>` with the key you created in OBS Studio. For example: `rtmp://192.168.0.30/live/test`
-* Click "Play"
-* Now VLC should start playing whatever you are transmitting from OBS Studio
+# Steps to Set Up Live Streaming with Kubernetes
 
-## Debugging
+## 1. Clone the GitHub Repository
 
-If something is not working you can check the logs of the container with:
+Start by cloning the repository that contains all the required code and configuration files.
 
-```bash
-docker logs nginx-rtmp
-```
+  ```
+  git clone https://github.com/madgicaltechdom/live-stream-kubernetes.git
+  cd live-stream-kubernetes
+  ```
 
-## Extending
+This repository includes:
+- Dockerfile for NGINX RTMP server
+- NGINX configuration file (nginx.conf)
+- Kubernetes deployment and service YAML files
 
-If you need to modify the configurations you can create a file `nginx.conf` and replace the one in this image using a `Dockerfile` that is based on the image, for example:
+## 2. Build and Push the Docker Image (Optional)
 
-```Dockerfile
-FROM buildpack-deps:stretch
+If you want to customize the NGINX RTMP server, you can rebuild the Docker image. Otherwise, you can skip this step and use the pre-built image available in the repository.
 
-COPY nginx.conf /etc/nginx/nginx.conf
-```
+  ```
+  docker build -t live-stream-kubernetes/nginx-rtmp:latest .
+  docker push live-stream-kubernetes/nginx-rtmp:latest
+  ```
 
-The current `nginx.conf` contains:
+## 3. Deploy NGINX RTMP Server on Kubernetes
 
-```Nginx
-worker_processes auto;
-rtmp_auto_push on;
-events {}
-rtmp {
-    server {
-        listen 1935;
-        listen [::]:1935 ipv6only=on;
+Apply the Kubernetes deployment and service files from the repository to your cluster:
 
-        application live {
-            live on;
-            record off;
-        }
-    }
-}
-```
+  ```
+  kubectl apply -f k8s/nginx-rtmp-deployment.yaml
+  kubectl apply -f k8s/nginx-rtmp-service.yaml
+  ```
 
-You can start from it and modify it as you need. Here's the [documentation related to `nginx-rtmp-module`](https://github.com/arut/nginx-rtmp-module/wiki/Directives).
+This will deploy the NGINX RTMP server and expose it using a NodePort service. You can customize the service type (e.g., LoadBalancer) if required.
 
-## Technical details
+## 4. Push a Live Stream Using FFmpeg
 
-* This image is built from the same base official images that most of the other official images, as Python, Node, Postgres, Nginx itself, etc. Specifically, [buildpack-deps](https://hub.docker.com/_/buildpack-deps/) which is in turn based on [debian](https://hub.docker.com/_/debian/). So, if you have any other image locally you probably have the base image layers already downloaded.
+Once the NGINX RTMP server is running, use FFmpeg to push a live stream to the server.
 
-* It is built from the official sources of **Nginx** and **nginx-rtmp-module** without adding anything else. (Surprisingly, most of the available images that include **nginx-rtmp-module** are made from different sources, old versions or add several other components).
+- Install FFmpeg if you don’t already have it:
+  ```
+  sudo apt update && sudo apt install ffmpeg
+  ```
+  
+- Push a live stream:
+  ```
+  ffmpeg -re -i /path/to/video.mp4 -c:v libx264 -preset veryfast -f flv rtmp://<nginx-rtmp-service>:1935/live/stream
+  ```
+  
+- Replace <nginx-rtmp-service> with the external IP or hostname of your NGINX RTMP server.
 
-* It has a simple default configuration that should allow you to send one or more streams to it and have several clients receiving multiple copies of those streams simultaneously. (It includes `rtmp_auto_push` and an automatic number of worker processes).
+## 5. Access the Stream
 
+To access the live stream, open the URL in an HLS-compatible media player or browser:
 
+  ```
+  http://<nginx-rtmp-service>:8080/hls/stream.m3u8
+  ```
+
+Test the stream using VLC Media Player or any HLS-compatible player. I used a Native HLS playback player.
+
+## 6. Verify the Stream
+
+To ensure the RTMP server is working correctly, you can view server statistics:
+
+- Access the RTMP stats page:
+  ```
+  http://<nginx-rtmp-service>:8080/stat
+  ```
+  
+This page provides details about the live streams currently being broadcast.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
