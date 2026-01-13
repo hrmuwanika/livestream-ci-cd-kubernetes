@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: nginx-rtmp
-          image: 697593013958.dkr.ecr.ap-south-1.amazonaws.com/nginx-rtmp-server:latest
+          image: hrmuwanika/nginx-rtmp:latest
           ports:
             - containerPort: 1935
             - containerPort: 8080
